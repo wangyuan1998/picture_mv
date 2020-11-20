@@ -12,6 +12,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import QRect, Qt
 import datetime
 
+
 def qtpixmap_to_cvimg(qtpixmap):
     qimg = qtpixmap.toImage()
     temp_shape = (qimg.height(), qimg.bytesPerLine() * 8 // qimg.depth())
@@ -23,12 +24,14 @@ def qtpixmap_to_cvimg(qtpixmap):
 
     return result
 
+
 def cvimg_to_qtimg(cvimg):
     height, width, depth = cvimg.shape
     cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
     cvimg = QImage(cvimg.data, width, height, width * depth, QImage.Format_RGB888)
 
     return cvimg
+
 
 class MyPaintAbleLabel(QLabel):
     x0 = 0
@@ -38,30 +41,30 @@ class MyPaintAbleLabel(QLabel):
     flag = False
     is_paint = False
 
-    #鼠标点击事件
-    def mousePressEvent(self,event):
+    # 鼠标点击事件
+    def mousePressEvent(self, event):
         self.flag = True
         self.x0 = event.x()
         self.y0 = event.y()
 
-    #鼠标释放事件
-    def mouseReleaseEvent(self,event):
+    # 鼠标释放事件
+    def mouseReleaseEvent(self, event):
         self.flag = False
 
-    #鼠标移动事件
-    def mouseMoveEvent(self,event):
+    # 鼠标移动事件
+    def mouseMoveEvent(self, event):
         if self.flag:
             self.x1 = event.x()
             self.y1 = event.y()
             self.update()
 
-    #绘制事件
+    # 绘制事件
     def paintEvent(self, event):
         super().paintEvent(event)
         if self.is_paint:
-            rect =QRect(self.x0, self.y0, abs(self.x1-self.x0), abs(self.y1-self.y0))
+            rect = QRect(self.x0, self.y0, abs(self.x1 - self.x0), abs(self.y1 - self.y0))
             painter = QPainter(self)
-            painter.setPen(QPen(Qt.red,2,Qt.SolidLine))
+            painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
             painter.drawRect(rect)
 
 
@@ -69,14 +72,14 @@ class WindowDemo(QWidget):
 
     def __init__(self):
         super(WindowDemo, self).__init__()
-        #设置窗口标题
+        # 设置窗口标题
         self.setWindowTitle('共性项目软件开发')
         self.desktop = QApplication.desktop()
         self.screen_width = self.desktop.width()
         self.screen_height = self.desktop.height()
 
-        self.window_width = int(self.screen_width/4*3)
-        self.window_height = int(self.screen_height/4*3)
+        self.window_width = int(self.screen_width / 4 * 3)
+        self.window_height = int(self.screen_height / 4 * 3)
 
         self.resize(self.window_width, self.window_height)
 
@@ -93,6 +96,7 @@ class WindowDemo(QWidget):
         self.now_image_height = 0
         self.now_map_image_width = 0
         self.now_map_image_height = 0
+        self.function_buttons = []
 
         # 重复利用的静态数据
         self.static_buttons_number = 6
@@ -108,48 +112,78 @@ class WindowDemo(QWidget):
         ]
 
         self.Function_Buttons_Name = [
-            "目标检测",         #0
-            "车辆目标检测",     #1
-            "道路提取",         #2
-            "目标识别",         #3
-            "跟踪目标",         #4
-            "定位建图",         #5
+            "加载图象",  # 0
+            "模型参数",  # 1
+            "目标检测",  # 2
+            "结果保存",  # 3
 
-            "加载图象",         #6
-            "选则视频",         #7
-            "模型参数",         #8
-            "结果保存",         #9
-            "目标框选",         #10
+            "加载图象",  # 4
+            "模型参数",  # 5
+            "车辆目标检测",  # 6
+            "结果保存",  # 7
+
+            "加载图象",  # 8
+            "模型参数",  # 9
+            "道路提取",  # 10
+            "结果保存",  # 11
+
+            "加载图象",  # 12
+            "模型参数",  # 13
+            "目标识别",  # 14
+            "结果保存",  # 15
+
+            "选则视频",  # 16
+            "目标框选",  # 17
+            "模型参数",  # 18
+            "跟踪目标",  # 19
+            "结果保存",  # 20
+
+            "选则视频",  # 21
+            "模型参数",  # 22
+            "定位建图",  # 23
+            "结果保存",  # 24
         ]
 
-        self.Static_to_Function = [
-            [6, 8, 0, 9],
-            [6, 8, 1, 9],
-            [6, 8, 2, 9],
-            [6, 8, 3, 9],
-
-            [7, 10, 8, 4, 9],
-            [7, 8, 5, 9],
+        self.Funtion_Buttons_Groups = [
+            [0, 1, 2, 3],
+            [4, 5, 6, 7],
+            [8, 9, 10, 11],
+            [12, 13, 14, 15],
+            [16, 17, 18, 19, 20],
+            [21, 22, 23, 24]
         ]
 
         self.Function_Button_image_paths = [
-            "./icon/目标检测.png",
-            "./icon/车辆目标检测.png",
-            "./icon/道路提取.png",
-            "./icon/目标识别.png",
-            "./icon/跟踪目标.png",
-            "./icon/定位建图.png",
-
             "./icon/加载图象.png",
+            "./icon/模型参数.png",
+            "./icon/目标检测.png",
+            "./icon/结果保存.png",
+            "./icon/加载图象.png",
+            "./icon/模型参数.png",
+            "./icon/车辆目标检测.png",
+            "./icon/结果保存.png",
+            "./icon/加载图象.png",
+            "./icon/模型参数.png",
+            "./icon/道路提取.png",
+            "./icon/结果保存.png",
+            "./icon/加载图象.png",
+            "./icon/模型参数.png",
+            "./icon/目标识别.png",
+            "./icon/结果保存.png",
+            "./icon/选则视频.png",
+            "./icon/目标框选.png",
+            "./icon/模型参数.png",
+            "./icon/跟踪目标.png",
+            "./icon/结果保存.png",
             "./icon/选则视频.png",
             "./icon/模型参数.png",
+            "./icon/定位建图.png",
             "./icon/结果保存.png",
-            "./icon/目标框选.png",
         ]
 
         self.Radio_Button_Names_For_Target_Track = [
-                "遥感光学目标跟踪",
-                "对空无人机跟踪"
+            "遥感光学目标跟踪",
+            "对空无人机跟踪"
         ]
 
         self.save_ans_folder_path = "./ans"
@@ -174,7 +208,6 @@ class WindowDemo(QWidget):
 
         self.setLayout(self.final_layout)
 
-
     def Create_Static_Button_Dock_Layout(self):
         self.Create_Static_Button()
 
@@ -183,14 +216,12 @@ class WindowDemo(QWidget):
         for i in range(self.static_buttons_number):
             self.static_button_dock_layout.addWidget(self.static_buttons[i])
 
-
     def Create_Function_Button_Layout(self):
         self.Create_Function_Button()
-
         self.function_button_dock_layout = QHBoxLayout()
-
-        for i in range(self.function_buttons_number):
+        for i in range(len(self.function_buttons)):
             self.function_button_dock_layout.addWidget(self.function_buttons[i])
+        self.Refresh_Function_Buttons_Visable()
 
     def Create_Work_Space_Layout(self):
         self.Create_Work_Space_Image_Label_Text_Edit()
@@ -225,9 +256,7 @@ class WindowDemo(QWidget):
             self.static_buttons[-1].clicked.connect(self.Static_Button_Click)
 
     def Create_Function_Button(self):
-        # 创建功能按钮
-        self.function_buttons = []
-        for i in range(self.function_buttons_number):
+        for i in range(len(self.Function_Buttons_Name)):
             self.function_buttons.append(QPushButton())
             icon = QtGui.QIcon()
             icon.addPixmap(QtGui.QPixmap(self.Function_Button_image_paths[i]), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -235,8 +264,6 @@ class WindowDemo(QWidget):
             self.function_buttons[-1].setIconSize(QtCore.QSize(50, 80))
             self.function_buttons[-1].setText(self.Function_Buttons_Name[i])
             self.function_buttons[-1].clicked.connect(self.Function_Button_Click)
-        # 刷新到第一个状态
-        self.Refresh_Function_Button(0)
 
     def Create_Work_Space_Image_Label_Text_Edit(self):
         self.image_video_label = MyPaintAbleLabel()
@@ -262,9 +289,9 @@ class WindowDemo(QWidget):
         dockwidget.setProperty('name', name)
         dockwidget.setWidget(widget)  # 带入的参数为一个QWidget窗体实例，将该窗体放入dock中
         dockwidget.setObjectName(name)
-        if type==0:
+        if type == 0:
             dockwidget.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)
-        if type==1:
+        if type == 1:
             dockwidget.setFeatures(QDockWidget.NoDockWidgetFeatures)
         return dockwidget
 
@@ -272,43 +299,68 @@ class WindowDemo(QWidget):
         sender = self.sender()
         id = 0
         for i in range(len(self.Static_Buttons_Name)):
-            if self.Static_Buttons_Name[i]==sender.text():
+            if self.Static_Buttons_Name[i] == sender.text():
                 id = i
                 break
         self.select_button_id = id
-        self.Refresh_Function_Button(id)
+        self.Refresh_Function_Buttons_Visable()
 
-    def Refresh_Function_Button(self, id):
-        select_funcs = self.Static_to_Function[id]
-        for i in range(self.function_buttons_number):
+    def Refresh_Function_Buttons_Visable(self):
+        id = self.select_button_id
+        for i in range(len(self.function_buttons)):
             self.function_buttons[i].setVisible(False)
-        for i in range(len(select_funcs)):
-            self.function_buttons[select_funcs[i]].setVisible(True)
+        for i in range(len(self.Funtion_Buttons_Groups[id])):
+            no = self.Funtion_Buttons_Groups[id][i]
+            self.function_buttons[no].setVisible(True)
 
     def Function_Button_Click(self):
         sender = self.sender()
         id = 0
-        for i in range(len(self.Function_Buttons_Name)):
-            if self.Function_Buttons_Name[i] == sender.text():
-                id = i
+        for i in range(self.select_button_id):
+            id+=len(self.Funtion_Buttons_Groups[i])
+        for i in range(len(self.Funtion_Buttons_Groups[self.select_button_id])):
+            if self.Function_Buttons_Name[id] == sender.text():
                 break
-        # 0 "目标检测",
-        # 1 "车辆目标检测",
-        # 2 "道路提取",
-        # 3 "目标识别",
-        # 4 "跟踪目标",
-        if id == 4:
-            # 收集数据，生成json文件，数据补全，messagebox提示
+            else:
+                id+=1
+        # print(id)
 
-            # 运行程序，读取图片并显示
+        # '目标检测',  #2
+        # '车辆目标检测', #6
+        # '道路提取',  #10
+        # '目标识别',  #14
+        # '视频跟踪',  #19
+        # '定位'       #23
+
+        # "加载图象",  # 0 4 8 12
+        # "选则视频",  # 16 21
+        # "目标框选",  # 17
+        # "模型参数",  # 1 5 9 13 18 22
+        # "结果保存",  # 3 7 11 15 20 24
+
+        # '目标检测',  #2
+        if id==2:
             pass
-        
-        # 5 "定位建图",
+        # '车辆目标检测', #6
+        if id==6:
+            pass
+        # '道路提取',  #10
+        if id==10:
+            pass
+        # '目标识别',  #14
+        if id==14:
+            pass
+        # '视频跟踪',  #19
+        if id==19:
+            pass
+        # '定位'       #23
+        if id==23:
+            pass
 
-        # 6 "加载图象",
-        if id == 6:
+        # 0 4 8 12 "加载图象",
+        if id in [0, 4, 8, 12]:
             self.imageName, self.imageType = QFileDialog.getOpenFileName(self, "打开图片", "", "Image Files(*.jpg *.png)")
-            if len(self.imageName)>0:
+            if len(self.imageName) > 0:
                 self.image = QtGui.QPixmap(self.imageName)
                 self.old_image_width = self.image.width()
                 self.old_image_height = self.image.height()
@@ -316,29 +368,28 @@ class WindowDemo(QWidget):
                 self.now_image_height = self.image_video_label.height()
                 self.image = self.image.scaled(self.now_image_width, self.now_image_height)
                 self.image_video_label.setPixmap(self.image)
-        # 7 "选则视频",
-        if id == 7:
+        # 16, 21 "选则视频",
+        if id in [16, 21]:
             self.VideoName, self.VideoType = QFileDialog.getOpenFileName(self, "打开图片", "", "Video Files(*.mp4)")
-            if len(self.VideoName)>0:
+            if len(self.VideoName) > 0:
                 self.video = cv2.VideoCapture(self.VideoName)
                 self.video_cnt = 0
                 self.Play_A_Frame()
-        # 8 "模型参数",
-        if id==8:
-            # self.Print_To_Text_Edit()
-            # self.Refresh_Map()
-            self.Select_Model_Parameter()
-        # 9 "结果保存",
-        if id==9:
-            self.Save_Ans()
-        # 10 "目标框选",
-        if id==10:
+        # "目标框选",  # 17
+        if id in [17]:
             self.Select_Target()
+        # "模型参数",  # 1 5 9 13 18 22
+        if id in [1, 5, 9, 13, 18, 22]:
+            self.Select_Model_Parameter()
+        # "结果保存",  # 3 7 11 15 20 24
+        if id in [3, 7, 11, 15, 20, 24]:
+            pass
+
 
     def Play_A_Frame(self):
         success, frame = self.video.read()
         if success:
-            self.video_cnt+=1
+            self.video_cnt += 1
             # <class 'PyQt5.QtGui.QImage'> -> <class 'PyQt5.QtGui.QPixmap'>
             self.image = QPixmap.fromImage(cvimg_to_qtimg(frame))
             self.old_image_width = self.image.width()
@@ -349,7 +400,7 @@ class WindowDemo(QWidget):
             self.image_video_label.setPixmap(self.image)
 
     def Create_Ans_Folder(self):
-        if os.path.exists(self.save_ans_folder_path)==False:
+        if os.path.exists(self.save_ans_folder_path) == False:
             os.mkdir(self.save_ans_folder_path)
 
     def Save_Ans(self):
@@ -358,6 +409,7 @@ class WindowDemo(QWidget):
             "ship 1.0 360.0952453613281 322.86016845703125 1029.7333984375 574.6747436523438 968.770263671875 736.7910766601562 299.1321105957031 484.97650146484375",
             "car 0.9998446702957153 433.01072692871094 257.82505798339844 492.43284606933594 282.04649353027344 479.03627014160156 314.9121551513672 419.61415100097656 290.6907196044922",
         ]
+
         def f(c):
             s = {'-', ':', ' ', '.'}
             if c in s:
@@ -366,11 +418,11 @@ class WindowDemo(QWidget):
 
         time_now = datetime.datetime.now()
         time_now = ''.join(list(map(f, str(time_now))))
-        ans_name = self.Static_Buttons_Name[self.select_button_id]+time_now+".txt"
-        ans_path = self.save_ans_folder_path+"/"+ans_name
+        ans_name = self.Static_Buttons_Name[self.select_button_id] + time_now + ".txt"
+        ans_path = self.save_ans_folder_path + "/" + ans_name
         ans_file = open(ans_path, 'w')
         for i in range(len(self.ans)):
-            ans_file.write(self.ans[i]+"\n")
+            ans_file.write(self.ans[i] + "\n")
         ans_file.close()
         QMessageBox.about(self, "保存结果", "保存已完成！ {}".format(ans_path))
 
@@ -387,16 +439,16 @@ class WindowDemo(QWidget):
             x0, y0, x1, y1 = x0 / self.now_image_width, y0 / self.now_image_height, x1 / self.now_image_width, y1 / self.now_image_height
             x0, y0, x1, y1 = x0 * self.old_image_width, y0 * self.old_image_height, x1 * self.old_image_width, y1 * self.old_image_height
             # x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
-            w = x1-x0
-            h = y1-y0
+            w = x1 - x0
+            h = y1 - y0
             # self.area = [x0, y0, x1, y1]
             self.area = [x0, y0, w, h]
 
     def Print_To_Text_Edit(self, info=''):
         old_info = self.textEdit.toPlainText()
         if len(old_info) > 0:
-            old_info = old_info+"\n"
-        info = old_info+"hello"
+            old_info = old_info + "\n"
+        info = old_info + "hello"
         self.textEdit.setPlainText(info)
 
     def Refresh_Map(self):
@@ -408,7 +460,7 @@ class WindowDemo(QWidget):
 
     def Select_Model_Parameter(self):
         # 4 "跟踪目标",
-        if self.select_button_id==4:
+        if self.select_button_id == 4:
             model_parameter_radio_button_box_dialog = QDialog()
             dialog_layout = QVBoxLayout()
             radio_buttons = []
@@ -432,16 +484,15 @@ class WindowDemo(QWidget):
         sender = self.sender()
         id = 0
         for i in range(len(self.Radio_Button_Names_For_Target_Track)):
-            if self.Radio_Button_Names_For_Target_Track[i]==sender.text():
+            if self.Radio_Button_Names_For_Target_Track[i] == sender.text():
                 id = i
                 break
         self.target_track_parameter = self.Radio_Button_Names_For_Target_Track[id]
         # print(self.target_track_parameter)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = WindowDemo()
     win.show()
     sys.exit(app.exec_())
-
-
