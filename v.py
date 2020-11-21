@@ -352,6 +352,9 @@ class WindowDemo(QWidget):
             pass
         # '视频跟踪',  #19
         if id==19:
+            result_json = {
+                "InputFilePath":[]
+            }
             pass
         # '定位'       #23
         if id==23:
@@ -380,11 +383,12 @@ class WindowDemo(QWidget):
             self.Select_Target()
         # "模型参数",  # 1 5 9 13 18 22
         if id in [1, 5, 9, 13, 18, 22]:
-            self.Select_Model_Parameter()
+            if id==18:
+                self.Select_Model_Parameter_For_Target_Track()
         # "结果保存",  # 3 7 11 15 20 24
         if id in [3, 7, 11, 15, 20, 24]:
-            pass
-
+            if id == 20:
+                self.Select_Save_Path_For_Target_Track()
 
     def Play_A_Frame(self):
         success, frame = self.video.read()
@@ -402,29 +406,6 @@ class WindowDemo(QWidget):
     def Create_Ans_Folder(self):
         if os.path.exists(self.save_ans_folder_path) == False:
             os.mkdir(self.save_ans_folder_path)
-
-    def Save_Ans(self):
-        self.Create_Ans_Folder()
-        self.ans = [
-            "ship 1.0 360.0952453613281 322.86016845703125 1029.7333984375 574.6747436523438 968.770263671875 736.7910766601562 299.1321105957031 484.97650146484375",
-            "car 0.9998446702957153 433.01072692871094 257.82505798339844 492.43284606933594 282.04649353027344 479.03627014160156 314.9121551513672 419.61415100097656 290.6907196044922",
-        ]
-
-        def f(c):
-            s = {'-', ':', ' ', '.'}
-            if c in s:
-                return '_'
-            return c
-
-        time_now = datetime.datetime.now()
-        time_now = ''.join(list(map(f, str(time_now))))
-        ans_name = self.Static_Buttons_Name[self.select_button_id] + time_now + ".txt"
-        ans_path = self.save_ans_folder_path + "/" + ans_name
-        ans_file = open(ans_path, 'w')
-        for i in range(len(self.ans)):
-            ans_file.write(self.ans[i] + "\n")
-        ans_file.close()
-        QMessageBox.about(self, "保存结果", "保存已完成！ {}".format(ans_path))
 
     def Select_Target(self):
         self.image_video_label.is_paint = ~(self.image_video_label.is_paint)
@@ -458,27 +439,24 @@ class WindowDemo(QWidget):
         self.map_image = self.map_image.scaled(self.now_map_image_width, self.now_map_image_height)
         self.map_image_label.setPixmap(self.map_image)
 
-    def Select_Model_Parameter(self):
-        # 4 "跟踪目标",
-        if self.select_button_id == 4:
-            model_parameter_radio_button_box_dialog = QDialog()
-            dialog_layout = QVBoxLayout()
-            radio_buttons = []
-            n = len(self.Radio_Button_Names_For_Target_Track)
-            target_track_radio_button_group = QButtonGroup()
-            for i in range(n):
-                radio_buttons.append(QRadioButton(self.Radio_Button_Names_For_Target_Track[i]))
-                dialog_layout.addWidget(radio_buttons[-1])
-                target_track_radio_button_group.addButton(radio_buttons[-1])
-                # radio_buttons[-1].toggled.connect(self.Toggle_Event_Of_Target_Track_Radio_Button)
-                radio_buttons[-1].clicked.connect(self.Toggle_Event_Of_Target_Track_Radio_Button)
+    def Select_Model_Parameter_For_Target_Track(self):
+        model_parameter_radio_button_box_dialog = QDialog()
+        dialog_layout = QVBoxLayout()
+        radio_buttons = []
+        n = len(self.Radio_Button_Names_For_Target_Track)
+        target_track_radio_button_group = QButtonGroup()
+        for i in range(n):
+            radio_buttons.append(QRadioButton(self.Radio_Button_Names_For_Target_Track[i]))
+            dialog_layout.addWidget(radio_buttons[-1])
+            target_track_radio_button_group.addButton(radio_buttons[-1])
+            radio_buttons[-1].clicked.connect(self.Toggle_Event_Of_Target_Track_Radio_Button)
 
-            model_parameter_radio_button_box_dialog.setLayout(dialog_layout)
-            model_parameter_radio_button_box_dialog.resize(300, 100)
-            model_parameter_radio_button_box_dialog.setWindowTitle("模型参数选择")
-            # 设置窗口的属性为ApplicationModal模态，用户只有关闭弹窗后，才能关闭主界面
-            model_parameter_radio_button_box_dialog.setWindowModality(Qt.ApplicationModal)
-            model_parameter_radio_button_box_dialog.exec_()
+        model_parameter_radio_button_box_dialog.setLayout(dialog_layout)
+        model_parameter_radio_button_box_dialog.resize(300, 100)
+        model_parameter_radio_button_box_dialog.setWindowTitle("模型参数选择")
+        # 设置窗口的属性为ApplicationModal模态，用户只有关闭弹窗后，才能关闭主界面
+        model_parameter_radio_button_box_dialog.setWindowModality(Qt.ApplicationModal)
+        model_parameter_radio_button_box_dialog.exec_()
 
     def Toggle_Event_Of_Target_Track_Radio_Button(self):
         sender = self.sender()
@@ -489,6 +467,31 @@ class WindowDemo(QWidget):
                 break
         self.target_track_parameter = self.Radio_Button_Names_For_Target_Track[id]
         # print(self.target_track_parameter)
+
+    def Select_Save_Path_For_Target_Track(self):
+        self.Create_Ans_Folder()
+        self.target_track_ans_save_path = QFileDialog.getExistingDirectory(self, "跟踪结果保存位置", "./ans")
+        self.ans = [
+            "ship 1.0 360.0952453613281 322.86016845703125 1029.7333984375 574.6747436523438 968.770263671875 736.7910766601562 299.1321105957031 484.97650146484375",
+            "car 0.9998446702957153 433.01072692871094 257.82505798339844 492.43284606933594 282.04649353027344 479.03627014160156 314.9121551513672 419.61415100097656 290.6907196044922",
+        ]
+
+        def f(c):
+            s = {'-', ':', ' ', '.'}
+            if c in s:
+                return '_'
+            return c
+
+        time_now = datetime.datetime.now()
+        time_now = ''.join(list(map(f, str(time_now))))
+        ans_name = self.Static_Buttons_Name[self.select_button_id] + time_now + ".txt"
+        ans_path = self.target_track_ans_save_path + "/" + ans_name
+        ans_file = open(ans_path, 'w')
+        for i in range(len(self.ans)):
+            ans_file.write(self.ans[i] + "\n")
+        ans_file.close()
+        QMessageBox.about(self, "保存结果", "保存已完成！ {}".format(ans_path))
+
 
 
 if __name__ == '__main__':
