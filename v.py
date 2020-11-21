@@ -9,9 +9,11 @@ from PyQt5.QtWidgets import QDockWidget
 import cv2
 import numpy as np
 from PyQt5.QtGui import *
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import QRect, Qt, QTimer
 import datetime
-
+from function_buttons_event import *
+import json
+from shutil import copyfile
 
 def qtpixmap_to_cvimg(qtpixmap):
     qimg = qtpixmap.toImage()
@@ -84,8 +86,7 @@ class WindowDemo(QWidget):
         self.resize(self.window_width, self.window_height)
 
         # 初始变量
-        self.video = None
-        self.video_cnt = 0
+        self.Selected_Video_path = ""
         self.area = []
         self.is_selecting = False
         self.image = None
@@ -97,6 +98,12 @@ class WindowDemo(QWidget):
         self.now_map_image_width = 0
         self.now_map_image_height = 0
         self.function_buttons = []
+        self.target_track_parameter = "RemoteSensing"
+        self.target_track_ans_save_path = ""
+        self.track_json_path = "F:/Tracking/Scripts/tracking/tracking.json"
+        self.track_result_txt_path = "F:/Tracking/Scripts/tracking/result.txt"
+        self.track_result_jpg_path = "F:/Tracking/Scripts/tracking/result.jpg"
+        self.frame_index = 0
 
         # 重复利用的静态数据
         self.static_buttons_number = 6
@@ -184,6 +191,10 @@ class WindowDemo(QWidget):
         self.Radio_Button_Names_For_Target_Track = [
             "遥感光学目标跟踪",
             "对空无人机跟踪"
+        ]
+        self.Track_Type_Name = [
+                "RemoteSensing",
+                "UAV",
         ]
 
         self.save_ans_folder_path = "./ans"
@@ -325,6 +336,9 @@ class WindowDemo(QWidget):
                 id+=1
         # print(id)
 
+        # 每次切换功能都关闭框选
+        self.Close_Select_Traget()
+
         # '目标检测',  #2
         # '车辆目标检测', #6
         # '道路提取',  #10
@@ -352,10 +366,17 @@ class WindowDemo(QWidget):
             pass
         # '视频跟踪',  #19
         if id==19:
-            result_json = {
-                "InputFilePath":[]
-            }
-            pass
+            # 读取设置的参数
+            video_path = self.Selected_Video_path
+            data_type = self.target_track_parameter
+            self.Get_Select_Area()
+            # print(self.area)
+            x1, y1, w, h = self.area
+            # 写入json，调用脚本
+            track_19(video_path, data_type, x1, y1, w, h)
+            # 显示tracking
+            self.frame_index = 0
+            self.Show_Tracking()
         # '定位'       #23
         if id==23:
             pass
@@ -373,11 +394,10 @@ class WindowDemo(QWidget):
                 self.image_video_label.setPixmap(self.image)
         # 16, 21 "选则视频",
         if id in [16, 21]:
-            self.VideoName, self.VideoType = QFileDialog.getOpenFileName(self, "打开图片", "", "Video Files(*.mp4)")
-            if len(self.VideoName) > 0:
-                self.video = cv2.VideoCapture(self.VideoName)
-                self.video_cnt = 0
-                self.Play_A_Frame()
+            if id==16:
+                self.Selected_Video_path = QFileDialog.getExistingDirectory(self, "选择视频", "F:/ODER_dataset/Track")
+                if len(self.Selected_Video_path) > 0:
+                    self.Play_First_Frame()
         # "目标框选",  # 17
         if id in [17]:
             self.Select_Target()
@@ -390,25 +410,25 @@ class WindowDemo(QWidget):
             if id == 20:
                 self.Select_Save_Path_For_Target_Track()
 
-    def Play_A_Frame(self):
-        success, frame = self.video.read()
-        if success:
-            self.video_cnt += 1
-            # <class 'PyQt5.QtGui.QImage'> -> <class 'PyQt5.QtGui.QPixmap'>
-            self.image = QPixmap.fromImage(cvimg_to_qtimg(frame))
-            self.old_image_width = self.image.width()
-            self.old_image_height = self.image.height()
-            self.now_image_width = self.image_video_label.width()
-            self.now_image_height = self.image_video_label.height()
-            self.image = self.image.scaled(self.now_image_width, self.now_image_height)
-            self.image_video_label.setPixmap(self.image)
+    def Play_First_Frame(self):
+        self.imageName = self.Selected_Video_path+"/img/0001.jpg"
+        self.image = QtGui.QPixmap(self.imageName)
+        self.old_image_width = self.image.width()
+        self.old_image_height = self.image.height()
+        self.now_image_width = self.image_video_label.width()
+        self.now_image_height = self.image_video_label.height()
+        self.image = self.image.scaled(self.now_image_width, self.now_image_height)
+        self.image_video_label.setPixmap(self.image)
 
     def Create_Ans_Folder(self):
         if os.path.exists(self.save_ans_folder_path) == False:
             os.mkdir(self.save_ans_folder_path)
 
     def Select_Target(self):
-        self.image_video_label.is_paint = ~(self.image_video_label.is_paint)
+        self.image_video_label.is_paint = True
+
+    def Close_Select_Traget(self):
+        self.image_video_label.is_paint = False
 
     def Get_Select_Area(self):
         samll_number = 0.0000001
@@ -426,10 +446,10 @@ class WindowDemo(QWidget):
             self.area = [x0, y0, w, h]
 
     def Print_To_Text_Edit(self, info=''):
-        old_info = self.textEdit.toPlainText()
-        if len(old_info) > 0:
-            old_info = old_info + "\n"
-        info = old_info + "hello"
+        # old_info = self.textEdit.toPlainText()
+        # if len(old_info) > 0:
+        #     old_info = old_info + "\n"
+        # info = old_info + "hello"
         self.textEdit.setPlainText(info)
 
     def Refresh_Map(self):
@@ -451,6 +471,7 @@ class WindowDemo(QWidget):
             target_track_radio_button_group.addButton(radio_buttons[-1])
             radio_buttons[-1].clicked.connect(self.Toggle_Event_Of_Target_Track_Radio_Button)
 
+        radio_buttons[0].click()
         model_parameter_radio_button_box_dialog.setLayout(dialog_layout)
         model_parameter_radio_button_box_dialog.resize(300, 100)
         model_parameter_radio_button_box_dialog.setWindowTitle("模型参数选择")
@@ -465,35 +486,59 @@ class WindowDemo(QWidget):
             if self.Radio_Button_Names_For_Target_Track[i] == sender.text():
                 id = i
                 break
-        self.target_track_parameter = self.Radio_Button_Names_For_Target_Track[id]
+        self.target_track_parameter = self.Track_Type_Name[id]
         # print(self.target_track_parameter)
 
     def Select_Save_Path_For_Target_Track(self):
-        self.Create_Ans_Folder()
         self.target_track_ans_save_path = QFileDialog.getExistingDirectory(self, "跟踪结果保存位置", "./ans")
-        self.ans = [
-            "ship 1.0 360.0952453613281 322.86016845703125 1029.7333984375 574.6747436523438 968.770263671875 736.7910766601562 299.1321105957031 484.97650146484375",
-            "car 0.9998446702957153 433.01072692871094 257.82505798339844 492.43284606933594 282.04649353027344 479.03627014160156 314.9121551513672 419.61415100097656 290.6907196044922",
-        ]
+        self.target_track_ans_save_path = self.target_track_ans_save_path+"/result.txt"
+        try:
+            # print(self.track_result_txt_path)
+            # print(self.target_track_ans_save_path)
+            copyfile(self.track_result_txt_path, self.target_track_ans_save_path)
+            QMessageBox.about(self, "保存结果", "保存已完成！ {}".format(self.target_track_ans_save_path))
+        except:
+            QMessageBox.about(self, "保存结果", "保存失败！")
 
-        def f(c):
-            s = {'-', ':', ' ', '.'}
-            if c in s:
-                return '_'
-            return c
+    def Show_Tracking(self):
+        self.timer_for_tracking = QTimer()
+        self.timer_for_tracking.setInterval(200)
+        self.timer_for_tracking.timeout.connect(self.Tracking_Timer_TimerOut)
+        self.timer_for_tracking.start()
 
-        time_now = datetime.datetime.now()
-        time_now = ''.join(list(map(f, str(time_now))))
-        ans_name = self.Static_Buttons_Name[self.select_button_id] + time_now + ".txt"
-        ans_path = self.target_track_ans_save_path + "/" + ans_name
-        ans_file = open(ans_path, 'w')
-        for i in range(len(self.ans)):
-            ans_file.write(self.ans[i] + "\n")
-        ans_file.close()
-        QMessageBox.about(self, "保存结果", "保存已完成！ {}".format(ans_path))
-
-
-
+    def Tracking_Timer_TimerOut(self):
+        # 首先检测是否已经跟踪完了
+        try:
+            json_file = open(self.track_json_path, 'r', encoding='utf-8')
+            json_data = json.load(json_file)
+            json_file.close()
+            # print(json_data["OutputParameter"]["ProgramStatus"][0]["value"])
+            frame_index = json_data['OutputParameter']['OutputResult'][1]['value']
+            self.frame_index = frame_index
+            x1 = json_data['OutputParameter']['OutputResult'][0]['x1']
+            y1 = json_data['OutputParameter']['OutputResult'][0]['y1']
+            w = json_data['OutputParameter']['OutputResult'][0]['w']
+            h = json_data['OutputParameter']['OutputResult'][0]['h']
+            info = "frame: {}\nx1 {}\ny1 {}\nw {}\nh {}\n".format(frame_index, x1, y1, w, h)
+            self.Print_To_Text_Edit(info)
+            if json_data["OutputParameter"]["ProgramStatus"][0]["value"] ==1:
+                self.timer_for_tracking.stop()
+        except:
+            pass
+        # 为确保能显示到最后一帧，每次进来都读取一下
+        if self.frame_index > 0:
+            try:
+                self.imageName = self.track_result_jpg_path
+                self.image = QtGui.QPixmap(self.imageName)
+                self.old_image_width = self.image.width()
+                self.old_image_height = self.image.height()
+                self.now_image_width = self.image_video_label.width()
+                self.now_image_height = self.image_video_label.height()
+                self.image = self.image.scaled(self.now_image_width, self.now_image_height)
+                self.image_video_label.setPixmap(self.image)
+            except:
+                # 正常情况下是产生读写竞争错误
+                pass
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = WindowDemo()
